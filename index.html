@@ -1,0 +1,719 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mic Test - WebIntoApp Working</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00ff88;
+        }
+        
+        .status-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 5px solid #00ff88;
+        }
+        
+        .mic-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            border: 5px solid white;
+            color: white;
+            font-size: 50px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px rgba(0,255,136,0.3);
+        }
+        
+        .mic-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .mic-btn.recording {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 65, 108, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); }
+        }
+        
+        .visualizer {
+            height: 80px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px;
+            border: 2px solid #00ff88;
+        }
+        
+        .bar {
+            flex: 1;
+            margin: 0 1px;
+            background: #00ff88;
+            border-radius: 3px 3px 0 0;
+            transition: height 0.1s;
+            min-height: 2px;
+        }
+        
+        .log-box {
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px;
+            border-radius: 3px;
+        }
+        
+        .log-success { color: #00ff88; }
+        .log-error { color: #ff416c; }
+        .log-warning { color: #ffcc00; }
+        .log-info { color: #00ccff; }
+        
+        .solution-box {
+            background: rgba(255,204,0,0.1);
+            border: 2px dashed #ffcc00;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background: #00ccff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        .btn-alt {
+            background: #9c27b0;
+        }
+        
+        .btn-danger {
+            background: #ff416c;
+        }
+        
+        .test-result {
+            background: rgba(0,255,136,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .test-result.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 WebIntoApp Mic Test</h1>
+        <p style="text-align: center; color: #00ccff; margin-bottom: 20px;">
+            Special fix for WebIntoApp APK
+        </p>
+        
+        <div class="status-box">
+            <div id="appStatus">Checking WebIntoApp compatibility...</div>
+        </div>
+        
+        <div class="visualizer" id="visualizer">
+            <!-- Bars will be generated -->
+        </div>
+        
+        <button class="mic-btn" id="micBtn" onclick="startMicTest()">
+            🎤
+        </button>
+        
+        <div class="log-box" id="logBox">
+            <!-- Logs will appear here -->
+        </div>
+        
+        <button onclick="testAudioCapture()">Test Audio Capture</button>
+        <button class="btn-alt" onclick="testMediaRecorder()">Test MediaRecorder</button>
+        <button class="btn-danger" onclick="forceMicTest()">Force Mic Test</button>
+        
+        <div class="test-result" id="testResult">
+            <h3>Test Result</h3>
+            <div id="resultText">Waiting for test...</div>
+        </div>
+        
+        <div class="solution-box">
+            <h3>⚡ WebIntoApp Fix Required:</h3>
+            <p>WebIntoApp ke settings mein yeh changes karo:</p>
+            <ol>
+                <li>Advanced Settings → JavaScript: ON</li>
+                <li>Advanced Settings → WebView Engine: Chrome</li>
+                <li>Permissions → Microphone: Allow</li>
+                <li>Custom Code mein neeche diya gaya code add karo</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // ========== INITIAL SETUP ==========
+        let isRecording = false;
+        let mediaStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let audioChunks = [];
+        let testResults = [];
+        
+        // Detect WebIntoApp
+        function detectWebIntoApp() {
+            const ua = navigator.userAgent.toLowerCase();
+            const appStatus = document.getElementById('appStatus');
+            
+            // Create visualizer bars
+            createBars();
+            
+            if (ua.includes('webintoapp') || ua.includes('wv')) {
+                appStatus.innerHTML = '✅ Running in WebIntoApp<br><span style="color:#ffcc00;font-size:12px;">Mic fix applied</span>';
+                addLog("WebIntoApp detected", "success");
+                
+                // Apply WebIntoApp fixes
+                applyWebIntoAppFixes();
+            } else {
+                appStatus.innerHTML = '⚠️ Not in WebIntoApp<br><span style="color:#00ccff;font-size:12px;">Direct browser test</span>';
+                addLog("Running in regular browser", "warning");
+            }
+            
+            // Test basic audio support
+            testAudioSupport();
+        }
+        
+        // Apply fixes for WebIntoApp
+        function applyWebIntoAppFixes() {
+            // WebIntoApp usually uses old WebView
+            // Override getUserMedia for compatibility
+            
+            if (!navigator.mediaDevices) {
+                navigator.mediaDevices = {};
+            }
+            
+            // Try to polyfill getUserMedia
+            if (!navigator.mediaDevices.getUserMedia) {
+                const getUserMedia = navigator.getUserMedia || 
+                                   navigator.webkitGetUserMedia ||
+                                   navigator.mozGetUserMedia;
+                
+                if (getUserMedia) {
+                    navigator.mediaDevices.getUserMedia = function(constraints) {
+                        return new Promise((resolve, reject) => {
+                            getUserMedia.call(navigator, constraints, resolve, reject);
+                        });
+                    };
+                    addLog("Applied getUserMedia polyfill", "success");
+                }
+            }
+            
+            // Enable experimental features
+            try {
+                // For old WebView
+                if (window.AudioContext) {
+                    window.audioContext = new AudioContext();
+                }
+            } catch (e) {
+                addLog("AudioContext setup failed: " + e.message, "error");
+            }
+        }
+        
+        // Create visualizer bars
+        function createBars() {
+            const visualizer = document.getElementById('visualizer');
+            visualizer.innerHTML = '';
+            
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = '2px';
+                // Different colors
+                if (i < 17) bar.style.background = '#00ff88';
+                else if (i < 34) bar.style.background = '#00ccff';
+                else bar.style.background = '#ffcc00';
+                visualizer.appendChild(bar);
+            }
+        }
+        
+        // Update visualizer
+        function updateVisualizer() {
+            if (!analyser || !isRecording) return;
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+            
+            const bars = document.querySelectorAll('.bar');
+            const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+            
+            bars.forEach((bar, i) => {
+                const value = dataArray[Math.floor(i * bufferLength / 50)] || average;
+                const height = Math.max(2, (value / 255) * 78);
+                bar.style.height = `${height}px`;
+            });
+            
+            if (isRecording) {
+                requestAnimationFrame(updateVisualizer);
+            }
+        }
+        
+        // Add log entry
+        function addLog(message, type = "info") {
+            const logBox = document.getElementById('logBox');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logBox.appendChild(logEntry);
+            logBox.scrollTop = logBox.scrollHeight;
+            
+            // Store for results
+            testResults.push({message, type, time: Date.now()});
+        }
+        
+        // ========== MIC TEST FUNCTIONS ==========
+        function startMicTest() {
+            if (isRecording) {
+                stopMicTest();
+                return;
+            }
+            
+            const micBtn = document.getElementById('micBtn');
+            micBtn.classList.add('recording');
+            micBtn.innerHTML = '⏹️';
+            
+            addLog("=== Starting Microphone Test ===", "info");
+            testResults = [];
+            
+            // Try multiple methods
+            testAllMicMethods();
+        }
+        
+        function testAllMicMethods() {
+            addLog("Method 1: Standard getUserMedia", "info");
+            
+            // Method 1: Standard approach
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const constraints = {
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        sampleRate: 44100,
+                        channelCount: 1
+                    }
+                };
+                
+                navigator.mediaDevices.getUserMedia(constraints)
+                    .then(stream => {
+                        addLog("✅ Method 1: Success!", "success");
+                        startAudioProcessing(stream);
+                    })
+                    .catch(err => {
+                        addLog(`❌ Method 1 Failed: ${err.name}`, "error");
+                        addLog(`Message: ${err.message}`, "error");
+                        
+                        // Try Method 2: Simple constraints
+                        addLog("Method 2: Simple audio only", "info");
+                        testMethod2();
+                    });
+            } else {
+                addLog("❌ getUserMedia not available", "error");
+                testMethod2();
+            }
+        }
+        
+        function testMethod2() {
+            // Method 2: Simple audio constraint
+            const oldGetUserMedia = navigator.getUserMedia || 
+                                  navigator.webkitGetUserMedia ||
+                                  navigator.mozGetUserMedia;
+            
+            if (oldGetUserMedia) {
+                oldGetUserMedia.call(navigator,
+                    { audio: true },
+                    stream => {
+                        addLog("✅ Method 2: Success (legacy API)", "success");
+                        startAudioProcessing(stream);
+                    },
+                    err => {
+                        addLog(`❌ Method 2 Failed: ${err.name}`, "error");
+                        
+                        // Try Method 3: MediaRecorder directly
+                        addLog("Method 3: Direct MediaRecorder", "info");
+                        testMethod3();
+                    }
+                );
+            } else {
+                addLog("❌ Legacy APIs not available", "error");
+                testMethod3();
+            }
+        }
+        
+        function testMethod3() {
+            // Method 3: Try to create audio context first
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioContext = new AudioContext();
+                    
+                    // Try to create dummy source
+                    const oscillator = audioContext.createOscillator();
+                    oscillator.connect(audioContext.destination);
+                    oscillator.start();
+                    setTimeout(() => oscillator.stop(), 100);
+                    
+                    addLog("✅ AudioContext works", "success");
+                    
+                    // Now try mic again with very simple constraints
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ audio: true })
+                            .then(stream => {
+                                addLog("✅ Method 3: Success after AudioContext", "success");
+                                startAudioProcessing(stream);
+                            })
+                            .catch(err => {
+                                addLog(`❌ Still failed: ${err.name}`, "error");
+                                showFailure();
+                            });
+                    } else {
+                        showFailure();
+                    }
+                } else {
+                    showFailure();
+                }
+            } catch (e) {
+                addLog(`❌ AudioContext error: ${e.message}`, "error");
+                showFailure();
+            }
+        }
+        
+        function startAudioProcessing(stream) {
+            mediaStream = stream;
+            isRecording = true;
+            
+            addLog("Starting audio processing...", "success");
+            
+            // Setup audio context for visualization
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                
+                // Start visualizer
+                updateVisualizer();
+                
+                // Start MediaRecorder to verify audio
+                startMediaRecorderTest(stream);
+                
+                // Auto-stop after 10 seconds
+                setTimeout(() => {
+                    if (isRecording) {
+                        addLog("Auto-stopping test...", "info");
+                        stopMicTest();
+                    }
+                }, 10000);
+                
+            } catch (e) {
+                addLog(`Audio processing error: ${e.message}`, "warning");
+                // Continue anyway - mic might still work
+                startMediaRecorderTest(stream);
+            }
+        }
+        
+        function startMediaRecorderTest(stream) {
+            if (window.MediaRecorder) {
+                try {
+                    const mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const sizeKB = audioBlob.size / 1024;
+                        
+                        if (sizeKB > 2) {
+                            addLog(`✅ Audio captured: ${sizeKB.toFixed(1)} KB`, "success");
+                            showResult(true, `Success! Audio recorded (${sizeKB.toFixed(1)} KB)`);
+                        } else {
+                            addLog(`⚠️ Small recording: ${sizeKB.toFixed(1)} KB`, "warning");
+                            showResult(false, "Audio too small - speak louder");
+                        }
+                    };
+                    
+                    mediaRecorder.start();
+                    
+                    // Stop after 5 seconds
+                    setTimeout(() => {
+                        if (mediaRecorder.state === 'recording') {
+                            mediaRecorder.stop();
+                        }
+                    }, 5000);
+                    
+                } catch (e) {
+                    addLog(`MediaRecorder error: ${e.message}`, "warning");
+                }
+            } else {
+                addLog("MediaRecorder not available", "warning");
+                // Just assume success if we got this far
+                showResult(true, "Microphone accessed successfully");
+            }
+        }
+        
+        function stopMicTest() {
+            if (!isRecording) return;
+            
+            isRecording = false;
+            const micBtn = document.getElementById('micBtn');
+            
+            micBtn.classList.remove('recording');
+            micBtn.innerHTML = '🎤';
+            
+            // Stop audio
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            addLog("=== Test Stopped ===", "info");
+        }
+        
+        function showResult(success, message) {
+            const resultBox = document.getElementById('testResult');
+            const resultText = document.getElementById('resultText');
+            
+            if (success) {
+                resultText.innerHTML = `<span style="color:#00ff88">✅ ${message}</span>`;
+                resultText.innerHTML += '<br><br><strong>Summary:</strong><br>';
+                testResults.forEach(r => {
+                    if (r.type === 'success') {
+                        resultText.innerHTML += `✓ ${r.message}<br>`;
+                    }
+                });
+            } else {
+                resultText.innerHTML = `<span style="color:#ff416c">❌ ${message}</span>`;
+                resultText.innerHTML += '<br><br><strong>Issues found:</strong><br>';
+                testResults.forEach(r => {
+                    if (r.type === 'error') {
+                        resultText.innerHTML += `✗ ${r.message}<br>`;
+                    }
+                });
+            }
+            
+            resultBox.classList.add('show');
+        }
+        
+        function showFailure() {
+            const resultBox = document.getElementById('testResult');
+            const resultText = document.getElementById('resultText');
+            
+            resultText.innerHTML = `
+                <span style="color:#ff416c">❌ Microphone Test Failed</span>
+                <br><br>
+                <strong>Possible reasons:</strong>
+                <ol>
+                    <li>WebIntoApp doesn't support microphone</li>
+                    <li>WebView too old (Android 4.x)</li>
+                    <li>JavaScript permissions blocked</li>
+                </ol>
+                <br>
+                <strong>Solution:</strong>
+                <ol>
+                    <li>Use <span style="color:#00ff88">Kodular</span> or <span style="color:#00ff88">MIT App Inventor</span> instead</li>
+                    <li>Or use <span style="color:#00ff88">Android Studio</span> with proper WebView</li>
+                </ol>
+            `;
+            
+            resultBox.classList.add('show');
+            stopMicTest();
+        }
+        
+        // ========== ALTERNATIVE TESTS ==========
+        function testAudioCapture() {
+            addLog("Testing Audio Capture API...", "info");
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        addLog("✅ Audio Capture API works", "success");
+                        stream.getTracks().forEach(track => track.stop());
+                    })
+                    .catch(err => {
+                        addLog(`❌ Audio Capture failed: ${err.name}`, "error");
+                    });
+            } else {
+                addLog("❌ Audio Capture API not available", "error");
+            }
+        }
+        
+        function testMediaRecorder() {
+            addLog("Testing MediaRecorder API...", "info");
+            
+            if (window.MediaRecorder) {
+                addLog("✅ MediaRecorder API available", "success");
+                
+                // Check MIME types
+                const mimeTypes = [
+                    'audio/webm',
+                    'audio/ogg',
+                    'audio/mp4',
+                    'audio/mpeg'
+                ];
+                
+                mimeTypes.forEach(type => {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        addLog(`✅ Supported: ${type}`, "success");
+                    } else {
+                        addLog(`❌ Not supported: ${type}`, "warning");
+                    }
+                });
+            } else {
+                addLog("❌ MediaRecorder not available", "error");
+            }
+        }
+        
+        function forceMicTest() {
+            addLog("=== FORCE MIC TEST ===", "warning");
+            addLog("Trying aggressive microphone access...", "warning");
+            
+            // Try to trigger permission directly
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        addLog("✅ FORCE SUCCESS: Got stream!", "success");
+                        
+                        // Create audio element to prove it works
+                        const audio = new Audio();
+                        const mediaStream = stream;
+                        
+                        // Try to play silence to trigger audio
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const source = audioContext.createMediaStreamSource(stream);
+                        
+                        addLog("✅ AudioContext created with stream", "success");
+                        
+                        // Clean up
+                        stream.getTracks().forEach(track => track.stop());
+                        audioContext.close();
+                        
+                        showResult(true, "Force test succeeded!");
+                    })
+                    .catch(err => {
+                        addLog(`❌ FORCE FAILED: ${err.toString()}`, "error");
+                        showFailure();
+                    });
+            }
+        }
+        
+        function testAudioSupport() {
+            addLog("Testing audio APIs...", "info");
+            
+            // Test Web Audio API
+            if (window.AudioContext || window.webkitAudioContext) {
+                addLog("✅ Web Audio API available", "success");
+            } else {
+                addLog("❌ Web Audio API not available", "error");
+            }
+            
+            // Test old audio API
+            if (window.Audio) {
+                addLog("✅ HTML5 Audio available", "success");
+            }
+            
+            // Test permissions API
+            if (navigator.permissions && navigator.permissions.query) {
+                addLog("✅ Permissions API available", "success");
+            } else {
+                addLog("⚠️ Permissions API not available", "warning");
+            }
+        }
+        
+        // ========== WEBINTOAPP CUSTOM CODE ==========
+        // Yeh code WebIntoApp ke "Custom Code" section mein dalna hai:
+        const webIntoAppCustomCode = `
+<!-- Add in AndroidManifest.xml for WebIntoApp: -->
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+<!-- Add in MainActivity.java: -->
+webView.setWebChromeClient(new WebChromeClient());
+webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        `;
+        
+        // Initialize
+        window.addEventListener('load', function() {
+            detectWebIntoApp();
+        });
+        
+        // Export for debugging
+        window.debugInfo = {
+            userAgent: navigator.userAgent,
+            mediaDevices: !!navigator.mediaDevices,
+            getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+            mediaRecorder: !!window.MediaRecorder,
+            audioContext: !!(window.AudioContext || window.webkitAudioContext)
+        };
+    </script>
+</body>
+</html>
